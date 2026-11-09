@@ -3,10 +3,10 @@
 # into public_html. config/secrets.php and uploads/ are never touched because
 # they are not in the repository; upload secrets.php once with File Manager.
 #
-# Change CPANELUSER below to the real cPanel username.
+# cPanel user: tczghmfy. If extraprinters.co.za is an addon domain, change public_html to its folder.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/CPANELUSER/public_html/
+    - export DEPLOYPATH=/home/tczghmfy/public_html/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R admin ajax assets classes config database includes vendor $DEPLOYPATH
     - /bin/cp *.php .htaccess .user.ini robots.txt favicon.ico $DEPLOYPATH

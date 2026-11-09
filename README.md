@@ -35,14 +35,14 @@ PHP 8.1+ · MySQL/MariaDB · no build step. Built with **SWIFTDNA** (same stack 
 1. 🟧 **MySQL® Databases** → create the database `<cpaneluser>_extraprinters` and a user `<cpaneluser>_extraprinters` with a strong password. Then **Add User To Database** → **ALL PRIVILEGES** → **Make Changes**.
 2. Fill in `config/secrets.php`: `db_name`, `db_user`, `db_pass`, `admin_seed_password`, `app_url` = `https://extraprinters.co.za`.
 3. Upload the site. Pick one way:
-   - **Git (recommended):** 🟧 **Git™ Version Control** → **Create** → Clone URL `https://github.com/bothamaria169-code/extraprinters.git`, repository path `/home/<cpaneluser>/repositories/extraprinters` → **Create**. Then **Manage** → **Pull or Deploy** → **Deploy HEAD Commit**. `.cpanel.yml` copies the files into `public_html`.
+   - **Git (recommended):** 🟧 **Git™ Version Control** → **Create** → Clone URL `https://github.com/bothamaria169-code/extraprinters.git`, repository path `/home/tczghmfy/repositories/extraprinters` → **Create**. Then **Manage** → **Pull or Deploy** → **Deploy HEAD Commit**. `.cpanel.yml` copies the files into `public_html`.
    - **Zip:** 🟧 **File Manager** → `public_html` → **Upload** the zip → **Extract**.
 4. 🟧 **File Manager** → upload `config/secrets.php` into `public_html/config/` (first time only; it is never in git).
 5. 🟧 **Domains** → `extraprinters.co.za` → **Force HTTPS Redirect** → **On**.
 6. 🟧 **Select PHP Version** → **8.2**, then under **Options** set `upload_max_filesize` = `64M` and `post_max_size` = `70M` (so 50 MB artwork files upload).
 7. 🟧 **Cron Jobs** → **Once Per Fifteen Minutes**:
    ```bash
-   /usr/local/bin/php /home/<cpaneluser>/public_html/cron.php >/dev/null 2>&1
+   /usr/local/bin/php /home/tczghmfy/public_html/cron.php >/dev/null 2>&1
    ```
 8. Open https://extraprinters.co.za once, then sign in at `/admin`.
 

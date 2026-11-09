@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /**
  * Scheduled work. cPanel → Cron Jobs → every 15 minutes:
- *   /usr/local/bin/php /home/CPANELUSER/public_html/cron.php >/dev/null 2>&1
+ *   /usr/local/bin/php /home/tczghmfy/public_html/cron.php >/dev/null 2>&1
  *
  *  - Facebook / Instagram auto-post (days + time in Admin → Social & bots)
  *  - AI blog article on the next SEO keyword (days in Admin → Blog)
