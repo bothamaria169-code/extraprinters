@@ -6,7 +6,7 @@ declare(strict_types=1);
  * creates or alters what is missing. Adding a step = bump SCHEMA_VERSION and
  * add an `if ($v < N)` block. The product catalogue is seeded once.
  */
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 function runMigrations(PDO $db): void
 {
@@ -76,7 +76,7 @@ function runMigrations(PDO $db): void
             FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE) $t");
         $db->exec("CREATE TABLE IF NOT EXISTS quote_files (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, quote_id INT UNSIGNED NOT NULL, item_id INT UNSIGNED NULL,
-            orig_name VARCHAR(255) NOT NULL, stored VARCHAR(255) NOT NULL, size INT UNSIGNED NOT NULL DEFAULT 0,
+            orig_name VARCHAR(255) NOT NULL, file_path VARCHAR(255) NOT NULL, size INT UNSIGNED NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE) $t");
 
@@ -99,6 +99,11 @@ function runMigrations(PDO $db): void
 
         require_once dirname(__DIR__) . '/includes/catalog_seed.php';
         seedCatalogue($db);
+    }
+    if ($v < 2) {
+        // MySQL 8 reserves the word STORED; older installs (MariaDB) used it as a column name.
+        $old = $db->query("SHOW COLUMNS FROM quote_files LIKE 'stored'")->fetch();
+        if ($old) $db->exec('ALTER TABLE quote_files CHANGE `stored` file_path VARCHAR(255) NOT NULL');
     }
     $db->prepare("REPLACE INTO app_settings (k, v) VALUES ('schema_version', ?)")->execute([(string) SCHEMA_VERSION]);
 }

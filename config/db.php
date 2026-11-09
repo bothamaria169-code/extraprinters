@@ -18,8 +18,12 @@ function getDB(): PDO
             databaseDown($e);
         }
         require_once dirname(__DIR__) . '/database/migrate.php';
-        runMigrations($pdo);
-        seedAdmin($pdo);
+        try {
+            runMigrations($pdo);
+            seedAdmin($pdo);
+        } catch (PDOException $e) {
+            setupFailed($e);
+        }
         adminResetFromSecrets($pdo);
     }
     return $pdo;
@@ -48,6 +52,22 @@ function adminResetFromSecrets(PDO $db): void
         $db->prepare('DELETE FROM login_attempts WHERE email = ?')->execute([$email]);
     }
     $db->prepare("REPLACE INTO app_settings (k, v) VALUES ('admin_reset_applied', ?)")->execute([$mark]);
+}
+
+/** The database answered but creating or updating a table failed. */
+function setupFailed(PDOException $e): never
+{
+    error_log('Extra Printers migration failed: ' . $e->getMessage());
+    if (PHP_SAPI === 'cli') { fwrite(STDERR, 'Database setup failed: ' . $e->getMessage() . "\n"); exit(1); }
+    http_response_code(503);
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Setting up</title>'
+       . '<body style="font-family:system-ui,sans-serif;background:#f4f6fb;color:#0e1726;display:grid;place-items:center;min-height:100vh;margin:0;padding:1rem">'
+       . '<div style="max-width:560px;background:#fff;border:1px solid #e4e8f1;border-radius:16px;padding:28px">'
+       . '<h1 style="font-size:20px;margin:0 0 10px">We\'ll be right back</h1><p>The database is connected, but setting up its tables failed.</p>'
+       . '<p style="font-size:13px;color:#4a5768;background:#f8f9fc;border-radius:10px;padding:12px;margin-top:18px"><strong>For the site owner:</strong> '
+       . htmlspecialchars($e->getMessage(), ENT_QUOTES) . '</p></div></body>';
+    exit;
 }
 
 /** A clear page instead of a blank one when MySQL can't be reached. */

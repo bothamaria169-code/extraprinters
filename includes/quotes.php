@@ -84,7 +84,7 @@ function createQuote(string $type, array $c, array $lines): array
 
     $dest = ARTWORK_DIR . $ref . '/';
     $insItem = $db->prepare('INSERT INTO quote_items (quote_id, product_id, product_name, options, quantity, unit_price, notes) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    $insFile = $db->prepare('INSERT INTO quote_files (quote_id, item_id, orig_name, stored, size) VALUES (?, ?, ?, ?, ?)');
+    $insFile = $db->prepare('INSERT INTO quote_files (quote_id, item_id, orig_name, file_path, size) VALUES (?, ?, ?, ?, ?)');
     foreach ($lines as $l) {
         $p = $l['product'];
         $insItem->execute([$id, $p['id'] ?? null, $l['name'], json_encode($l['options'], JSON_UNESCAPED_UNICODE), $l['quantity'],
