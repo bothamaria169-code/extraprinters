@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+// The site needs PHP 8.1+. On an older PHP, say so plainly instead of a blank 500.
+if (PHP_VERSION_ID < 80100) {
+    http_response_code(500);
+    header('Content-Type: text/html; charset=UTF-8');
+    exit('<!doctype html><meta charset="utf-8"><body style="font-family:sans-serif;padding:2rem;max-width:560px">'
+       . '<h1 style="font-size:20px">PHP ' . PHP_VERSION . ' is too old</h1>'
+       . '<p>Extra Printers needs PHP 8.1 or newer. In cPanel open <b>Select PHP Version</b> (or <b>MultiPHP Manager</b>), '
+       . 'choose <b>8.2</b> for extraprinters.co.za and press <b>Apply</b>, then reload this page.</p></body>');
+}
+
 // ── Secrets ──────────────────────────────────────────────────────
 // Passwords and keys live in config/secrets.php (not in git). Copy
 // config/secrets.example.php to start one.
