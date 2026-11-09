@@ -1,0 +1,67 @@
+Options -Indexes
+DirectoryIndex index.php
+
+# Artwork uploads up to 50 MB (cPanel: also set in Select PHP Version → Options or .user.ini)
+<IfModule mod_php.c>
+  php_value upload_max_filesize 64M
+  php_value post_max_size 70M
+  php_value max_execution_time 120
+  php_value max_input_time 120
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Live site: force https and drop "www." so Google sees one address
+  RewriteCond %{HTTP_HOST} ^www\.(extraprinters\.co\.za)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+  RewriteCond %{HTTP_HOST} ^extraprinters\.co\.za$ [NC]
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # Code, data and private artwork are never served directly
+  RewriteRule ^(config|includes|classes|database|vendor|docs|uploads/artwork|\.git)(/|$) - [F,L]
+
+  # Clean URLs
+  RewriteRule ^product/([a-z0-9-]+)/?$ product.php?slug=$1 [L,QSA]
+  RewriteRule ^shop/([a-z0-9-]+)/?$ shop.php?cat=$1 [L,QSA]
+  RewriteRule ^blog/([a-z0-9-]+)/?$ post.php?slug=$1 [L,QSA]
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+  # Local SEO landing pages (/invoice-books-johannesburg …)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^([a-z0-9-]+-johannesburg)/?$ landing.php?slug=$1 [L,QSA]
+
+  # Anything else that doesn't exist → friendly 404 page
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ 404.php [L]
+</IfModule>
+
+# Dumps, notes, lock files and anything that looks like a credential note
+<FilesMatch "(\.(sql|md|lock|phar|log|bak|env|ini)|^composer\.json|^\.cpanel\.yml|^\.gitignore)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 30 days"
+  ExpiresByType application/javascript "access plus 30 days"
+  ExpiresByType image/webp "access plus 60 days"
+  ExpiresByType image/jpeg "access plus 60 days"
+  ExpiresByType image/png "access plus 60 days"
+  ExpiresByType image/x-icon "access plus 60 days"
+</IfModule>

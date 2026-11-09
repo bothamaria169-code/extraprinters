@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /ajax/
+Disallow: /cart.php
+Disallow: /checkout.php
+Disallow: /quote.php
+Disallow: /login.php
+
+Sitemap: https://extraprinters.co.za/sitemap.xml

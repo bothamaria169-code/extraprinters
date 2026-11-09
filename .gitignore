@@ -1,0 +1,25 @@
+# ── Never in GitHub ──────────────────────────────────────────────
+config/secrets.php
+*.env
+.env*
+
+# Customer files and uploaded photos live on the server only
+uploads/artwork/*
+!uploads/artwork/.htaccess
+uploads/products/*
+!uploads/products/.htaccess
+
+# Originals, tooling and junk
+/CMYK Petal X Logo.png
+/Vibrant Extra Printers Logo.png
+/product.jpeg
+.claude/
+composer.phar
+*.zip
+*.log
+error_log
+.DS_Store
+Thumbs.db
+/product*.jpeg
+/product*.jpg
+/product*.png

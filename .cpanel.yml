@@ -1,0 +1,15 @@
+# cPanel → Git™ Version Control → Manage → "Deploy HEAD Commit" runs these steps.
+# The repository is cloned to /home/USER/repositories/extraprinters and copied
+# into public_html. config/secrets.php and uploads/ are never touched because
+# they are not in the repository; upload secrets.php once with File Manager.
+#
+# Change CPANELUSER below to the real cPanel username.
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/CPANELUSER/public_html/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R admin ajax assets classes config database includes vendor $DEPLOYPATH
+    - /bin/cp *.php .htaccess .user.ini robots.txt favicon.ico $DEPLOYPATH
+    - /bin/mkdir -p ${DEPLOYPATH}uploads/artwork ${DEPLOYPATH}uploads/products
+    - /bin/cp uploads/artwork/.htaccess ${DEPLOYPATH}uploads/artwork/.htaccess
+    - /bin/cp uploads/products/.htaccess ${DEPLOYPATH}uploads/products/.htaccess

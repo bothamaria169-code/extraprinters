@@ -1,0 +1,2 @@
+# Private: customer artwork is only downloaded through admin/file.php
+Require all denied
