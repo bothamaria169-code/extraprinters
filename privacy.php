@@ -15,6 +15,8 @@ $mail = e(biz('email'));
   <p>Uploaded files are stored privately on our server and only opened by our team to quote and print your job. We delete artwork 12 months after your order unless you ask us to keep it for reprints.</p>
   <h2>Chat messages</h2>
   <p>If you message us on WhatsApp, Messenger or Instagram, an automated assistant may answer common questions. Messages are kept so our team can follow up.</p>
+  <h2>Social media</h2>
+  <p>Our website posts our own product photos to our Facebook, Instagram and TikTok accounts. It uses only our own business accounts and never posts or shares customer information or customer artwork.</p>
   <h2>Your rights</h2>
   <p>You may ask to see, correct or delete your personal information, or object to how we use it. Email <a href="mailto:<?= $mail ?>"><?= $mail ?></a>. You may also complain to the Information Regulator (inforegulator.org.za).</p>
   <h2>Data deletion (Facebook and Instagram)</h2>

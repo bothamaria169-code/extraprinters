@@ -92,12 +92,12 @@ function aiCaption(array $product, string $platform): string
 {
     $link = CANONICAL_URL . '/product/' . $product['slug'];
     $fallback = "{$product['name']} 🖨️\n{$product['tagline']}.\n\n✅ Printed in Johannesburg\n✅ Upload your artwork online or let us design it (R300)\n✅ Collection or delivery across Gauteng\n\n"
-              . ($platform === 'instagram' ? 'Get a quote: link in bio or WhatsApp us' : "Get a quote: {$link}")
+              . (in_array($platform, ['instagram', 'tiktok'], true) ? 'Get a quote: link in bio or WhatsApp us' : "Get a quote: {$link}")
               . "\n\n#ExtraPrinters #PrintingJohannesburg #Johannesburg #PrintShop #SmallBusinessSA";
     if (!aiEnabled()) return $fallback;
     $system = 'You write social media posts for a Johannesburg print shop. South African English, upbeat but not cheesy, 2–4 relevant emojis. '
             . 'Answer ONLY with JSON {"caption":""}. 50–90 words: a hook in the first line, 3 short benefit lines, a call to action, then 6–9 hashtags including #ExtraPrinters and #PrintingJohannesburg. '
-            . ($platform === 'instagram' ? 'Instagram: no links; say "link in bio" or "WhatsApp us".' : 'Facebook: include this link once: ' . $link)
+            . (in_array($platform, ['instagram', 'tiktok'], true) ? ucfirst($platform) . ': no links; say "link in bio" or "WhatsApp us".' : 'Facebook: include this link once: ' . $link)
             . ' Never invent prices or discounts.';
     $r = groqJson($system, "PRODUCT: {$product['name']} — {$product['tagline']}\n\nSHOP\n" . shopContext(false), 500);
     $c = trim((string) ($r['data']['caption'] ?? ''));

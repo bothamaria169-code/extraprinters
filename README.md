@@ -15,7 +15,7 @@ PHP 8.1+ · MySQL/MariaDB · no build step. Built with **SWIFTDNA** (same stack 
 | Blog (AI-written printing tips) | `blog.php`, `post.php` |
 | Admin | `admin/`: Dashboard, Quotes & orders, Products, Categories, Blog, Social & bots, Settings, Audit log |
 | AI writing (Groq) | `includes/ai.php`: product text, blog articles, social captions, chat replies |
-| Meta bots | `classes/MetaPoster.php` (auto-posts to Facebook + Instagram), `webhook.php` (WhatsApp / Messenger / Instagram auto-replies) |
+| Social bots | `classes/MetaPoster.php` (auto-posts to Facebook + Instagram), `classes/TikTok.php` (photo drafts to the TikTok inbox), `includes/social.php` (schedule + JPEG copies), `webhook.php` (WhatsApp / Messenger / Instagram auto-replies) |
 | Scheduled work | `cron.php`: social posts, blog articles, clearing old cart uploads |
 | Database | `database/migrate.php`: creates every table and the full product list itself on the first page load |
 | Guides | **`docs/SETUP-GUIDE.md`** (Google Business Profile, Search Console, Analytics, Ads, Meta, Groq, step by step) · **`docs/Extra-Printers-SEO-and-Google-Ads-Plan.pdf`** (for the client) |
@@ -57,6 +57,7 @@ PHP 8.1+ · MySQL/MariaDB · no build step. Built with **SWIFTDNA** (same stack 
 | **AI writing (Groq)** | Key from console.groq.com → **Test** |
 | **Google** | GA4 Measurement ID, Search Console verification code, Google Ads conversion ID/label, Business Profile review link |
 | **Meta** | Pixel ID + Conversions API token; App ID + secret → **Connect with Facebook**; WhatsApp Cloud API token, phone number ID and verify token |
+| **TikTok** | Sandbox Client key + secret → **Connect TikTok** (in **Social & bots**); verify `extraprinters.co.za` under URL properties first |
 
 The full click-by-click steps are in **docs/SETUP-GUIDE.md**.
 

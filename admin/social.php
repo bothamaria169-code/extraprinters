@@ -10,20 +10,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         save_secret_setting('meta_app_secret', (string) ($_POST['meta_app_secret'] ?? ''));
         flash('success', 'Meta app keys saved. Now press Connect with Facebook.');
     } elseif ($form === 'disconnect') {
-        MetaPoster::disconnect();
+        ($_POST['which'] ?? '') === 'tiktok' ? TikTok::disconnect() : MetaPoster::disconnect();
         flash('success', 'Disconnected.');
+    } elseif ($form === 'tiktok_keys') {
+        set_setting('tiktok_client_key', trim((string) $_POST['tiktok_client_key']));
+        save_secret_setting('tiktok_client_secret', (string) ($_POST['tiktok_client_secret'] ?? ''));
+        flash('success', 'TikTok app keys saved. Now press Connect TikTok.');
     } elseif ($form === 'autopost') {
         set_setting('autopost_on', !empty($_POST['autopost_on']) ? '1' : '0');
         set_setting('autopost_days', implode(',', array_intersect((array) ($_POST['days'] ?? []), array_keys(POST_DAYS))));
         set_setting('autopost_time', preg_match('/^\d{2}:\d{2}$/', (string) $_POST['autopost_time']) ? $_POST['autopost_time'] : '08:00');
         set_setting('autopost_fb', !empty($_POST['autopost_fb']) ? '1' : '0');
         set_setting('autopost_ig', !empty($_POST['autopost_ig']) ? '1' : '0');
+        set_setting('autopost_tt', !empty($_POST['autopost_tt']) ? '1' : '0');
         flash('success', 'Auto-posting saved.');
     } elseif ($form === 'post_now') {
         $p = !empty($_POST['product_id']) ? product((string) (int) $_POST['product_id']) : null;
         $res = autopostRun($p);
         $ok = array_filter($res, fn($r) => $r['ok']);
-        flash($ok ? 'success' : 'error', implode(' · ', array_map(fn($k, $r) => ucfirst($k) . ': ' . ($r['ok'] ? 'posted' : $r['error']), array_keys($res), $res)));
+        flash($ok ? 'success' : 'error', implode(' · ', array_map(fn($k, $r) => ($k === 'tiktok' ? 'TikTok' : ucfirst($k)) . ': ' . ($r['ok'] ? ($k === 'tiktok' ? 'draft sent to your TikTok inbox' : 'posted') : $r['error']), array_keys($res), $res)));
     } elseif ($form === 'chatbot') {
         set_setting('chatbot_on', !empty($_POST['chatbot_on']) ? '1' : '0');
         set_setting('wa_phone_id', preg_replace('/\D/', '', (string) $_POST['wa_phone_id']));
@@ -42,7 +47,7 @@ $log = getDB()->query('SELECT s.*, p.name FROM social_posts s LEFT JOIN products
 $convos = getDB()->query("SELECT channel, sender, MAX(created_at) last, COUNT(*) n FROM chat_log GROUP BY channel, sender ORDER BY last DESC LIMIT 20")->fetchAll();
 $open = isset($_GET['chat'], $_GET['ch']) ? chatHistory((string) $_GET['ch'], (string) $_GET['chat']) : [];
 
-adminOpen('social', 'Social & bots', 'Auto-posts to Facebook and Instagram, plus an AI chat bot for WhatsApp, Messenger and Instagram.');
+adminOpen('social', 'Social & bots', 'Auto-posts to Facebook, Instagram and TikTok, plus an AI chat bot for WhatsApp, Messenger and Instagram.');
 ?>
 <div class="grid-2 even">
   <section class="card">
@@ -63,6 +68,24 @@ adminOpen('social', 'Social & bots', 'Auto-posts to Facebook and Instagram, plus
       <?php endif; ?>
       <?= copyBox('Valid OAuth Redirect URI', CANONICAL_URL . '/admin/meta-connect.php') ?>
     </div>
+    <div class="card__body" style="border-top:1px solid var(--line)">
+      <h3 style="font-size:1rem;margin-bottom:.6rem"><i class="fa-brands fa-tiktok"></i> TikTok <span class="hint">(posts arrive as drafts in the TikTok app inbox; SETUP-GUIDE §7b)</span></h3>
+      <?php $tt = TikTok::config(); if (TikTok::connected()): ?>
+        <p><span class="tag tag-on">Connected</span> <?= $tt['name'] ? '<strong>' . e($tt['name']) . '</strong>' : '' ?></p>
+        <form method="post" style="margin-top:.6rem" data-confirm="Disconnect TikTok?"><?= csrfField() ?><input type="hidden" name="form" value="disconnect"><input type="hidden" name="which" value="tiktok"><button class="btn btn-ghost btn-xs">Disconnect</button></form>
+      <?php else: ?>
+        <form method="post"><?= csrfField() ?><input type="hidden" name="form" value="tiktok_keys">
+          <div class="form-grid">
+            <div class="field"><label>Client key</label><input name="tiktok_client_key" value="<?= e($tt['client_key']) ?>"></div>
+            <div class="field"><label>Client secret</label><input name="tiktok_client_secret" type="password" placeholder="<?= e(masked($tt['client_secret']) ?: 'Not set') ?>"></div>
+          </div>
+          <div class="form-foot"><button class="btn btn-ghost">Save keys</button>
+            <?php if (TikTok::ready()): ?><a class="btn btn-dark" href="tiktok-connect.php?start=1"><i class="fa-brands fa-tiktok"></i> Connect TikTok</a><?php endif; ?></div>
+        </form>
+      <?php endif; ?>
+      <?= copyBox('TikTok Login Kit redirect URI', TikTok::redirectUri()) ?>
+      <?= copyBox('TikTok URL property to verify (Domain)', parse_url(CANONICAL_URL, PHP_URL_HOST)) ?>
+    </div>
   </section>
 
   <section class="card">
@@ -71,12 +94,12 @@ adminOpen('social', 'Social & bots', 'Auto-posts to Facebook and Instagram, plus
       <label class="chip-check" style="margin-bottom:.8rem"><input type="checkbox" name="autopost_on" value="1" <?= $ap['on'] ? 'checked' : '' ?>> Auto-posting on</label>
       <div class="chips" style="margin-bottom:.8rem"><?php foreach (POST_DAYS as $k => $d): ?><label class="chip-check"><input type="checkbox" name="days[]" value="<?= $k ?>" <?= in_array((string) $k, $ap['days'], true) ? 'checked' : '' ?>> <?= $d ?></label><?php endforeach; ?></div>
       <div class="form-grid"><div class="field"><label>Time</label><input type="time" name="autopost_time" value="<?= e($ap['time']) ?>"></div>
-        <div class="field"><label>Post to</label><div class="chips"><label class="chip-check"><input type="checkbox" name="autopost_fb" value="1" <?= $ap['fb'] ? 'checked' : '' ?>> Facebook</label><label class="chip-check"><input type="checkbox" name="autopost_ig" value="1" <?= $ap['ig'] ? 'checked' : '' ?>> Instagram</label></div></div></div>
+        <div class="field"><label>Post to</label><div class="chips"><label class="chip-check"><input type="checkbox" name="autopost_fb" value="1" <?= $ap['fb'] ? 'checked' : '' ?>> Facebook</label><label class="chip-check"><input type="checkbox" name="autopost_ig" value="1" <?= $ap['ig'] ? 'checked' : '' ?>> Instagram</label><label class="chip-check"><input type="checkbox" name="autopost_tt" value="1" <?= $ap['tt'] ? 'checked' : '' ?>> TikTok (draft)</label></div></div></div>
       <button class="btn btn-primary">Save schedule</button>
     </form>
     <form method="post" class="card__body" style="border-top:1px solid var(--line);display:flex;gap:.5rem;flex-wrap:wrap"><?= csrfField() ?><input type="hidden" name="form" value="post_now">
       <select name="product_id" class="input" style="flex:1"><option value="">Next product in line</option><?php foreach (products() as $p): ?><option value="<?= (int) $p['id'] ?>"><?= e($p['name']) ?></option><?php endforeach; ?></select>
-      <button class="btn btn-ghost" <?= $meta['token'] ? '' : 'disabled' ?>><i class="fa-solid fa-paper-plane"></i> Post one now</button>
+      <button class="btn btn-ghost" <?= $meta['token'] || TikTok::connected() ? '' : 'disabled' ?>><i class="fa-solid fa-paper-plane"></i> Post one now</button>
     </form>
   </section>
 </div>

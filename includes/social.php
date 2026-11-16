@@ -2,15 +2,17 @@
 declare(strict_types=1);
 
 /**
- * Meta auto-bots (SWIFTDNA):
- *  1. Auto-posting: cron.php posts one product to Facebook + Instagram on the
- *     days and times set in Admin → Social & bots, with an AI caption.
+ * Social auto-bots (SWIFTDNA):
+ *  1. Auto-posting: cron.php posts one product to Facebook, Instagram and
+ *     TikTok (as an inbox draft) on the days and times set in
+ *     Admin → Social & bots, with an AI caption.
  *  2. Chat bot: webhook.php answers WhatsApp, Messenger and Instagram DMs with
  *     Groq, using the shop's own products and contact details.
  */
 require_once __DIR__ . '/catalog.php';
 require_once __DIR__ . '/ai_writers.php';
 require_once BASE_DIR . '/classes/MetaPoster.php';
+require_once BASE_DIR . '/classes/TikTok.php';
 
 const POST_DAYS = ['1' => 'Mon', '2' => 'Tue', '3' => 'Wed', '4' => 'Thu', '5' => 'Fri', '6' => 'Sat', '7' => 'Sun'];
 
@@ -23,7 +25,49 @@ function autopostConfig(): array
         'time'  => get_setting('autopost_time', '08:00'),
         'fb'    => get_setting('autopost_fb', '1') === '1',
         'ig'    => get_setting('autopost_ig', '1') === '1',
+        'tt'    => get_setting('autopost_tt', '1') === '1',
     ];
+}
+
+/**
+ * Public JPEG copy of a product photo for social media (1080 × 1080).
+ * Instagram's API refuses WebP, and Meta/TikTok download the photo from this
+ * address themselves, so it is made once and kept in uploads/products/social/.
+ */
+function socialPhotoUrl(array $p): string
+{
+    $src = null;
+    foreach (json_decode((string) ($p['images'] ?? ''), true) ?: [] as $f) {
+        if (is_file(PRODUCT_IMG_DIR . basename($f))) { $src = PRODUCT_IMG_DIR . basename($f); break; }
+    }
+    if (!$src) {
+        foreach (['webp', 'jpg', 'jpeg', 'png'] as $ext) {
+            if (is_file(BASE_DIR . "/assets/products/{$p['slug']}.{$ext}")) { $src = BASE_DIR . "/assets/products/{$p['slug']}.{$ext}"; break; }
+        }
+    }
+    if (!$src) return CANONICAL_URL . '/assets/img/og-default.jpg';
+
+    $name = $p['slug'] . '-' . substr(md5($src . filemtime($src)), 0, 8) . '.jpg';
+    $dir = PRODUCT_IMG_DIR . 'social/';
+    if (!is_file($dir . $name)) {
+        $info = @getimagesize($src);
+        $im = match ($info[2] ?? 0) {
+            IMAGETYPE_WEBP => @imagecreatefromwebp($src),
+            IMAGETYPE_PNG  => @imagecreatefrompng($src),
+            IMAGETYPE_JPEG => @imagecreatefromjpeg($src),
+            default        => false,
+        };
+        if (!$im) return CANONICAL_URL . '/assets/img/og-default.jpg';
+        $out = imagecreatetruecolor(1080, 1080);
+        imagefill($out, 0, 0, imagecolorallocate($out, 255, 255, 255));
+        $w = imagesx($im); $h = imagesy($im); $s = min(1080 / $w, 1080 / $h);
+        imagecopyresampled($out, $im, (int) ((1080 - $w * $s) / 2), (int) ((1080 - $h * $s) / 2), 0, 0, (int) ($w * $s), (int) ($h * $s), $w, $h);
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        foreach (glob($dir . $p['slug'] . '-*.jpg') ?: [] as $old) @unlink($old);
+        imagejpeg($out, $dir . $name, 88);
+        imagedestroy($im); imagedestroy($out);
+    }
+    return CANONICAL_URL . '/uploads/products/social/' . $name;
 }
 
 /** True when a scheduled slot is due now and hasn't run yet today. */
@@ -51,20 +95,22 @@ function autopostRun(?array $p = null): array
     $p ??= autopostPick();
     if (!$p) return ['all' => ['ok' => false, 'error' => 'No products to post.']];
     $c = autopostConfig();
-    $img = productImages($p)[0] ?? null;
-    // Meta downloads the photo itself, so it must be a public https address.
-    $img = $img ? preg_replace('/\?v=\d+$/', '', str_replace(APP_URL, CANONICAL_URL, $img)) : CANONICAL_URL . '/assets/img/og-default.jpg';
+    // Meta and TikTok download the photo themselves: a public https JPEG.
+    $img = socialPhotoUrl($p);
     $out = [];
-    foreach (['facebook' => $c['fb'], 'instagram' => $c['ig']] as $platform => $want) {
-        if (!$want || !MetaPoster::connected($platform)) continue;
+    $targets = ['facebook' => $c['fb'] && MetaPoster::connected('facebook'), 'instagram' => $c['ig'] && MetaPoster::connected('instagram'),
+                'tiktok' => $c['tt'] && TikTok::connected()];
+    foreach (array_keys(array_filter($targets)) as $platform) {
         $caption = aiCaption($p, $platform);
-        $r = MetaPoster::publish($platform, $caption, $img, 'image');
+        $r = $platform === 'tiktok'
+            ? TikTok::postPhotos([$img], $p['name'] . ' | Extra Printers', $caption)
+            : MetaPoster::publish($platform, $caption, $img, 'image');
         getDB()->prepare('INSERT INTO social_posts (platform, product_id, caption, ok, ext_id, error) VALUES (?, ?, ?, ?, ?, ?)')
             ->execute([$platform, $p['id'], $caption, $r['ok'] ? 1 : 0, $r['id'], mb_substr($r['error'], 0, 500)]);
         $out[$platform] = ['ok' => $r['ok'], 'error' => $r['error']];
     }
     getDB()->prepare('UPDATE products SET last_posted_at = NOW() WHERE id = ?')->execute([$p['id']]);
-    return $out ?: ['all' => ['ok' => false, 'error' => 'Facebook / Instagram are not connected yet.']];
+    return $out ?: ['all' => ['ok' => false, 'error' => 'Facebook, Instagram and TikTok are not connected yet.']];
 }
 
 // ── Chat bot ──────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 
 Work through this from top to bottom. Each step says where you do it:
 
-- 🟦 **ACCOUNT**: on Google, Meta or Groq (their websites)
+- 🟦 **ACCOUNT**: on Google, Meta, TikTok or Groq (their websites)
 - 🟩 **ADMIN**: in the site's admin at `https://extraprinters.co.za/admin/`
 - 🟧 **CPANEL**: in your hosting control panel
 
@@ -21,6 +21,9 @@ Work through this from top to bottom. Each step says where you do it:
 | Meta → App settings → Basic | Privacy policy / data deletion URL | `https://extraprinters.co.za/privacy.php` |
 | Meta → Facebook Login for Business | Valid OAuth Redirect URI | `https://extraprinters.co.za/admin/meta-connect.php` |
 | Meta → WhatsApp / Messenger → Webhooks | Callback URL | `https://extraprinters.co.za/webhook.php` |
+| TikTok → Login Kit | Redirect URI | `https://extraprinters.co.za/admin/tiktok-connect.php` |
+| TikTok → URL properties | Domain to verify | `extraprinters.co.za` |
+| TikTok → App details | Terms of Service / Privacy Policy URL | `https://extraprinters.co.za/terms.php` · `https://extraprinters.co.za/privacy.php` |
 
 **Admin → Settings** shows each of these with a **Copy** button.
 
@@ -122,7 +125,24 @@ AI then writes product descriptions (**✨ Write with AI** on each product), two
 6. 🟩 **Social & bots → Connections** → paste App ID + secret → **Save keys** → **Connect with Facebook** → tick the Page and the Instagram account → **Save**.
 7. 🟩 **Social & bots → Auto-posting** → pick the days and times (e.g. Mon/Wed/Fri 08:00) → switch on. The bot picks a product that hasn't been posted lately, writes the caption with AI and posts it with the product photo.
 
-**Test:** 🟩 **Social & bots** → **Post one now** → check the Facebook Page.
+**Test:** 🟩 **Social & bots** → **Post one now** → check the Facebook Page and Instagram. The site sends Meta a JPEG copy of the product photo automatically (Instagram refuses WebP).
+
+## 7b. TikTok: automatic photo posts (🟦 ACCOUNT + 🟧 CPANEL, 25 min)
+
+TikTok posts arrive in the **TikTok app inbox as drafts**. Open the draft in the app, add a trending sound, and press **Post**. That is TikTok's rule for new (unaudited) apps. Once the app passes TikTok's audit you can ask for direct posting.
+
+1. 🟦 https://developers.tiktok.com → **Log in** with the Extra Printers TikTok account → top right **Manage apps** → **Connect an app** → name `Extra Printers Poster` → **Confirm**.
+2. 🟦 **App details**: upload `assets/img/mark-512.png` as the icon. Category **Business**, a short description ("Posts Extra Printers product photos to our own TikTok account"), and the Terms and Privacy URLs from the table above. **Platforms** → tick **Web** → website URL `https://extraprinters.co.za`.
+3. 🟦 **Add products** → **Login Kit** → Redirect URI `https://extraprinters.co.za/admin/tiktok-connect.php`. Then **Add products** → **Content Posting API** (leave **Direct Post** off). Scopes: `user.info.basic` and `video.upload` (it also covers photo drafts).
+4. 🟦 **Verify the website**. TikTok only accepts photos from a domain you own. Under **Content Posting API** → **Manage URL properties** (or **URL properties**) → **Verify new property** → **Domain** → `extraprinters.co.za` → it shows a TXT value starting with `tiktok-developers-site-verification=` → **Copy**.
+5. 🟧 cPanel → **Zone Editor** → `extraprinters.co.za` → **Manage** → **+ Add Record** → **Add TXT Record** → Name `extraprinters.co.za.`, Record = paste → **Save Record**. Keep the Google and SPF TXT records. 🟦 Back in TikTok → **Verify**.
+6. 🟦 Switch the app to **Sandbox** (top of the app page) → **Sandbox settings** → **Target users** → **Add** the Extra Printers TikTok account. Copy the **sandbox Client key** and **Client secret**.
+7. 🟩 **Social & bots → Connections → TikTok** → paste the Client key and secret → **Save keys** → **Connect TikTok** → **Authorize**.
+8. 🟩 **Auto-posting** → tick **TikTok (draft)** → **Save schedule**.
+
+**Test:** 🟩 **Post one now** → the message says "draft sent to your TikTok inbox" → open the TikTok app → **Inbox** (or **Profile → Drafts**) → open it → add a sound → **Post**.
+
+> Errors: "url_ownership_unverified" means step 4–5 isn't verified yet. A `redirect_uri` error means the URI was saved in the production app instead of the **sandbox**.
 
 ## 8. Meta: auto-reply chat bots (WhatsApp, Messenger, Instagram) (🟦 ACCOUNT, 20 min)
 
